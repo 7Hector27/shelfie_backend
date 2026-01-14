@@ -9,10 +9,11 @@ const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
+app.use(router);
 
 const server = createServer(app);
 
-router.get("/health", (req, res) => {
+router.get("/health", (_req, res) => {
   res.json({ status: "WE DID IT" });
 });
 
