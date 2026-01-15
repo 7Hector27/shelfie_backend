@@ -1,22 +1,17 @@
-import express from "express";
-import cors from "cors";
+import "dotenv/config";
 import { createServer } from "http";
-import { Router } from "express";
+import app from "./app";
+import { connectDB } from "./db";
 
-const app = express();
-const router = Router();
-const PORT = 4000;
-
-app.use(cors());
-app.use(express.json());
-app.use(router);
+const PORT = process.env.PORT || 4000;
 
 const server = createServer(app);
+async function start() {
+  await connectDB();
 
-router.get("/health", (_req, res) => {
-  res.json({ status: "WE DID IT" });
-});
+  server.listen(PORT, () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
+  });
+}
 
-server.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
+start();
