@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.services";
 import { signJwt } from "../utils/jwt";
+import jwt from "jsonwebtoken";
 
 const COOKIE_NAME = "shelfie_session";
 
@@ -53,5 +54,25 @@ export const signIn = async (
         error: "Invalid email or password",
       });
     }
+  }
+};
+
+export const me = (req: Request, res: Response) => {
+  const token = req.cookies[COOKIE_NAME];
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: string;
+    };
+
+    return res.json({
+      id: payload.userId,
+    });
+  } catch {
+    return res.sendStatus(401);
   }
 };
