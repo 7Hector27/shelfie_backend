@@ -45,7 +45,6 @@ export const login = async (data: unknown) => {
   if (!user) {
     throw new Error("Invalid credentials");
   }
-  console.log("Found user:", user);
   // 3. Verify password
   const isValid = await bcrypt.compare(password, user.password_hash);
   if (!isValid) {

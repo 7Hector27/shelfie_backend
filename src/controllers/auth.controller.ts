@@ -47,7 +47,11 @@ export const signIn = async (
     });
 
     res.json(user);
-  } catch (err) {
-    next(err);
+  } catch (error: any) {
+    if (error.message === "Invalid credentials") {
+      return res.status(401).json({
+        error: "Invalid email or password",
+      });
+    }
   }
 };
