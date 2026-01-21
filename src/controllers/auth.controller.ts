@@ -76,3 +76,13 @@ export const me = (req: Request, res: Response) => {
     return res.sendStatus(401);
   }
 };
+
+export const logout = (_req: Request, res: Response) => {
+  res.clearCookie(COOKIE_NAME, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  return res.sendStatus(204); // No Content
+};
