@@ -18,6 +18,15 @@ export const findByEmail = async (email: string) => {
 
   return result.rows[0] || null;
 };
+
+export const findById = async (id: string) => {
+  const result = await pool.query(
+    "SELECT user_id, first_name, last_name FROM profiles WHERE user_id = $1",
+    [id],
+  );
+  return result.rows[0] || null;
+};
+
 export const create = async (data: CreateUserInput) => {
   const client = await pool.connect();
 

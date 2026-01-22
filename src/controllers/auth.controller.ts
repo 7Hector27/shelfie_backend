@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.services";
 import { signJwt } from "../utils/jwt";
 import jwt from "jsonwebtoken";
+import * as userRepo from "../repositories/user.repository";
 
 const COOKIE_NAME = "shelfie_session";
 
@@ -57,7 +58,7 @@ export const signIn = async (
   }
 };
 
-export const me = (req: Request, res: Response) => {
+export const me = async (req: Request, res: Response) => {
   const token = req.cookies[COOKIE_NAME];
 
   if (!token) {
@@ -68,9 +69,10 @@ export const me = (req: Request, res: Response) => {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;
     };
-
+    const user = await userRepo.findById(payload.userId);
+    console.log("Fetched current user:", user);
     return res.json({
-      id: payload.userId,
+      ...user,
     });
   } catch {
     return res.sendStatus(401);
@@ -84,5 +86,5 @@ export const logout = (_req: Request, res: Response) => {
     sameSite: "lax",
   });
 
-  return res.sendStatus(204); // No Content
+  return res.sendStatus(204);
 };
