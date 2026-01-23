@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { Router } from "express";
 import authRoutes from "./routes/auth.routes";
+import friendsRoutes from "./routes/friends.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import cookieParser from "cookie-parser";
 
@@ -19,6 +20,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use("/auth", authRoutes);
+app.use("/friends", friendsRoutes);
 
 router.get("/health", (_req, res) => {
   res.json({ status: "WE DID IT" });
