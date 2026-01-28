@@ -8,49 +8,65 @@ export async function searchUsersForFriends(
 
   const first = parts[0] ?? null;
   const second = parts[1] ?? null;
-
+  console.log(first, second, "HELLO");
   const { rows } = await pool.query(
     `
-  SELECT
-    u.id,
-    u.email,
-    p.first_name,
-    p.last_name,
-    p.profile_image
-  FROM users u
-  JOIN profiles p
-    ON p.user_id = u.id
-  WHERE
-    (
-      p.first_name ILIKE '%' || $1 || '%'
-      OR p.last_name ILIKE '%' || $1 || '%'
-      OR u.email ILIKE '%' || $1 || '%'
+ SELECT
+  u.id,
+  u.email,
+  p.first_name,
+  p.last_name,
+  p.profile_image
+FROM users u
+JOIN profiles p
+  ON p.user_id = u.id
+WHERE
+  (
+    -- prefix match for names
+    p.first_name ILIKE $1 || '%'
+    OR p.last_name ILIKE $1 || '%'
 
-      OR (
-        $3::text IS NOT NULL
-        AND p.first_name ILIKE $1 || '%'
-        AND p.last_name ILIKE $3 || '%'
-      )
+    -- email contains
+    OR u.email ILIKE '%' || $1 || '%'
 
-      OR (
-        $3::text IS NOT NULL
-        AND p.first_name ILIKE $3 || '%'
-        AND p.last_name ILIKE $1 || '%'
-      )
+    -- full name: first last
+    OR (
+      $3::text IS NOT NULL
+      AND p.first_name ILIKE $1 || '%'
+      AND p.last_name ILIKE $3 || '%'
     )
-  AND u.id <> $2
-  AND u.id NOT IN (
-    SELECT friend_id FROM friendships WHERE user_id = $2
-    UNION
-    SELECT receiver_id FROM friend_requests WHERE sender_id = $2
-    UNION
-    SELECT sender_id FROM friend_requests WHERE receiver_id = $2
+
+    -- full name: last first
+    OR (
+      $3::text IS NOT NULL
+      AND p.first_name ILIKE $3 || '%'
+      AND p.last_name ILIKE $1 || '%'
+    )
   )
-  LIMIT 10
+AND u.id <> $2
+
+AND NOT EXISTS (
+  SELECT 1
+  FROM friendships f
+  WHERE f.user_id = $2
+    AND f.friend_id = u.id
+)
+
+AND NOT EXISTS (
+  SELECT 1
+  FROM friend_requests fr
+  WHERE
+    (fr.sender_id = $2 AND fr.receiver_id = u.id)
+    OR
+    (fr.receiver_id = $2 AND fr.sender_id = u.id)
+)
+
+LIMIT 10;
+
   `,
     [first, currentUserId, second],
   );
-
+  console.log(rows, "rows");
   return rows;
 }
 
@@ -128,9 +144,9 @@ export async function acceptFriendRequest(requestId: string, userId: string) {
 export async function declineFriendRequest(requestId: string, userId: string) {
   await pool.query(
     `
-    UPDATE friend_requests
-    SET status = 'rejected'
-    WHERE id = $1 AND receiver_id = $2
+    DELETE FROM friend_requests
+    WHERE id = $1
+      AND receiver_id = $2
     `,
     [requestId, userId],
   );
