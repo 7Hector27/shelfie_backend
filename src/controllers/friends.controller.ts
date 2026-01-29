@@ -5,6 +5,7 @@ import {
   getIncomingFriendRequests,
   acceptFriendRequest,
   declineFriendRequest,
+  getFriendsListForUser,
 } from "../services/friends.services";
 
 export async function searchFriends(req: Request, res: Response) {
@@ -25,6 +26,22 @@ export async function searchFriends(req: Request, res: Response) {
       lastName: u.last_name,
       email: u.email,
       profilePictureUrl: u.profile_picture_url,
+    })),
+  });
+}
+
+export async function getFriendsList(req: Request, res: Response) {
+  if (!req.user) return res.sendStatus(401);
+  const userId = req.user.id;
+  const friends = await getFriendsListForUser(userId);
+
+  res.json({
+    friends: friends?.map((f) => ({
+      id: f.id,
+      firstName: f.first_name,
+      lastName: f.last_name,
+      email: f.email,
+      profilePictureUrl: f.profile_picture_url,
     })),
   });
 }

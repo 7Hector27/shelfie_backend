@@ -151,3 +151,23 @@ export async function declineFriendRequest(requestId: string, userId: string) {
     [requestId, userId],
   );
 }
+
+export async function getFriendsListForUser(userId: string) {
+  const { rows } = await pool.query(
+    `
+    SELECT
+      u.id,
+      u.email,
+      p.first_name,
+      p.last_name,
+      p.profile_image
+    FROM friendships f
+    JOIN users u ON u.id = f.friend_id
+    JOIN profiles p ON p.user_id = u.id
+    WHERE f.user_id = $1
+    ORDER BY p.first_name, p.last_name
+    `,
+    [userId],
+  );
+  return rows;
+}
