@@ -1,5 +1,8 @@
 import express from "express";
-import { uploadProfileImageController } from "../controllers/user.controller";
+import {
+  uploadProfileImageController,
+  updateUserProfile,
+} from "../controllers/user.controller";
 import { requireAuth } from "../middlewares/requireAuth";
 import { upload } from "../middlewares/upload";
 
@@ -11,5 +14,7 @@ router.post(
   upload.single("image"),
   uploadProfileImageController,
 );
+
+router.post("/profile", requireAuth, updateUserProfile);
 
 export default router;
