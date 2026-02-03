@@ -14,7 +14,7 @@ export async function uploadProfileImage(
 
   await s3.send(
     new PutObjectCommand({
-      Bucket: "profile-images-shelfie",
+      Bucket: "shelfie-profile-images",
       Key: key,
       Body: buffer,
       ContentType: contentType,
@@ -22,5 +22,5 @@ export async function uploadProfileImage(
     }),
   );
 
-  return `https://profile-images-shelfie.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  return `https://shelfie-profile-images.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }

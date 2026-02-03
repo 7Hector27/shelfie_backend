@@ -58,7 +58,6 @@ export const signIn = async (
 
 export const me = async (req: Request, res: Response) => {
   const token = req.cookies[COOKIE_NAME];
-
   if (!token) {
     return res.sendStatus(401);
   }
@@ -67,6 +66,7 @@ export const me = async (req: Request, res: Response) => {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;
     };
+
     const user = await userRepo.findById(payload.userId);
     return res.json({
       ...user,
