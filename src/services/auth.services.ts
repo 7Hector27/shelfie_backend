@@ -10,7 +10,10 @@ export const hashPassword = (password: string) => {
 
 export const register = async (data: unknown) => {
   // 1. Validate input
-  const { email, password, firstName, lastName } = registerSchema.parse(data);
+  const parsed = registerSchema.parse(data);
+
+  const email = parsed.email.toLowerCase(); // 👈 fix
+  const { password, firstName, lastName } = parsed;
 
   // 2. Check if user exists
   const existingUser = await userRepo.findByEmail(email);
@@ -38,13 +41,16 @@ export const register = async (data: unknown) => {
 
 export const login = async (data: unknown) => {
   // 1. Validate input
-  const { email, password } = loginSchema.parse(data);
+  const parsed = loginSchema.parse(data);
+  const email = parsed.email.toLowerCase(); // 👈 normalize
+  const { password } = parsed;
 
   // 2. Find user
   const user = await userRepo.findByEmail(email);
   if (!user) {
     throw new Error("Invalid credentials");
   }
+
   // 3. Verify password
   const isValid = await bcrypt.compare(password, user.password_hash);
   if (!isValid) {
