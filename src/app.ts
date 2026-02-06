@@ -6,6 +6,7 @@ import userRouters from "./routes/user.routes";
 import friendsRoutes from "./routes/friends.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import cookieParser from "cookie-parser";
+import openLibraryRoutes from "./routes/openLibrary.routes";
 
 const app = express();
 const router = Router();
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/user", userRouters);
 app.use("/friends", friendsRoutes);
+app.use("/openlibrary", openLibraryRoutes);
 
 router.get("/health", (_req, res) => {
   res.json({ status: "WE DID IT" });
