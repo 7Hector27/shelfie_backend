@@ -20,3 +20,27 @@ export const searchBooks = async (query: string, limit = 5) => {
 
   return data.docs || [];
 };
+
+export const getWorkById = async (id: string) => {
+  const res = await fetch(`https://openlibrary.org/works/${id}.json`, {
+    headers: { "User-Agent": "Shelfie/1.0" },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch work");
+  }
+
+  return res.json();
+};
+
+export const getAuthorByKey = async (key: string) => {
+  const res = await fetch(`https://openlibrary.org${key}.json`, {
+    headers: { "User-Agent": "Shelfie/1.0" },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch author");
+  }
+
+  return res.json();
+};
