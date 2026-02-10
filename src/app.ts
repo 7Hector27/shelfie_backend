@@ -4,6 +4,7 @@ import { Router } from "express";
 import authRoutes from "./routes/auth.routes";
 import userRouters from "./routes/user.routes";
 import friendsRoutes from "./routes/friends.routes";
+import userBookRoutes from "./routes/userBooks.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import cookieParser from "cookie-parser";
 import openLibraryRoutes from "./routes/openLibrary.routes";
@@ -25,7 +26,7 @@ app.use("/auth", authRoutes);
 app.use("/user", userRouters);
 app.use("/friends", friendsRoutes);
 app.use("/openlibrary", openLibraryRoutes);
-
+app.use("/userbooks", userBookRoutes);
 router.get("/health", (_req, res) => {
   res.json({ status: "WE DID IT" });
 });
