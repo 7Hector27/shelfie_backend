@@ -3,6 +3,7 @@ import {
   uploadProfileImageController,
   updateUserProfile,
   getUserProfile,
+  getUserBooks,
 } from "../controllers/user.controller";
 import { requireAuth } from "../middlewares/requireAuth";
 import { upload } from "../middlewares/upload";
@@ -19,5 +20,7 @@ router.post(
 router.post("/profile", requireAuth, updateUserProfile);
 
 router.get("/profile/:id", requireAuth, getUserProfile);
+
+router.get("/:id/books", getUserBooks);
 
 export default router;

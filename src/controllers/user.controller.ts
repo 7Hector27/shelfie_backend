@@ -39,7 +39,7 @@ export async function updateUserProfile(req: Request, res: Response) {
 
 export async function getUserProfile(req: Request, res: Response) {
   const { id } = req.params;
-
+  console.log(id);
   if (!req.user) {
     return res.status(400).json({ error: "Unauthorized" });
   }
@@ -162,5 +162,78 @@ export async function getUserProfile(req: Request, res: Response) {
   } catch (err) {
     console.error("Error fetching user profile:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function getUserBooks(req: Request, res: Response) {
+  try {
+    const { id: userId } = req.params;
+    const { shelf, favorite, page = "1", limit = "10" } = req.query;
+
+    const pageNumber = parseInt(page as string, 10);
+    const limitNumber = parseInt(limit as string, 10);
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // base filter
+    let where = `WHERE user_id = $1`;
+    const values: any[] = [userId];
+    let paramIndex = 2;
+
+    if (shelf) {
+      where += ` AND status = $${paramIndex}`;
+      values.push(shelf);
+      paramIndex++;
+    }
+
+    if (favorite) {
+      where += ` AND favorite = $${paramIndex}`;
+      values.push(favorite === "true");
+      paramIndex++;
+    }
+
+    // 1) total count
+    const countQuery = `
+      SELECT COUNT(*)::int AS total
+      FROM user_books
+      ${where}
+    `;
+    const countRes = await pool.query(countQuery, values);
+    const total = countRes.rows[0]?.total ?? 0;
+
+    // 2) paged data
+    const dataQuery = `
+  SELECT 
+    ub.*,
+    b.title,
+    b.author,
+    b.cover_url,
+    b.description
+  FROM user_books ub
+  JOIN books b ON ub.book_id = b.id
+  ${where.replace("WHERE user_id", "WHERE ub.user_id")}
+  ORDER BY ub.updated_at DESC
+  LIMIT $${paramIndex}
+  OFFSET $${paramIndex + 1}
+`;
+
+    const dataValues = [...values, limitNumber, offset];
+    const { rows } = await pool.query(dataQuery, dataValues);
+
+    const totalPages = Math.max(1, Math.ceil(total / limitNumber));
+
+    res.json({
+      data: rows,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPrevPage: pageNumber > 1,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch user books" });
   }
 }
