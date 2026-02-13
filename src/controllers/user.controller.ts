@@ -45,9 +45,9 @@ export async function getUserProfile(req: Request, res: Response) {
   }
   try {
     // 1. Basic user info
-    const userResult = await pool.query(
+    const { rows: userResult } = await pool.query(
       `
-      SELECT id, name, avatar, bio, created_at, birthday
+      SELECT user_id, first_name, last_name, profile_image, bio, created_at, birthdate
       FROM profiles
       WHERE user_id = $1
       `,
@@ -83,7 +83,7 @@ export async function getUserProfile(req: Request, res: Response) {
 
     shelvesResult.rows.forEach((row) => {
       if (row.status === "want_to_read") shelves.wantToRead = Number(row.count);
-      if (row.status === "currently_reading")
+      if (row.status === "reading")
         shelves.currentlyReading = Number(row.count);
       if (row.status === "read") shelves.read = Number(row.count);
       if (row.status === "dropped") shelves.dropped = Number(row.count);
@@ -92,31 +92,55 @@ export async function getUserProfile(req: Request, res: Response) {
     // 3. Currently reading preview
     const currentlyReadingResult = await pool.query(
       `
-      SELECT book_id, 
-      FROM user_books
-      WHERE user_id = $1 AND status = 'currently_reading'
-      ORDER BY updated_at DESC
-      LIMIT 5
-      `,
+  SELECT 
+    ub.id as user_book_id,
+    ub.book_id,
+    ub.status,
+    ub.updated_at as shelf_updated_at,
+    b.title,
+    b.cover_url,
+    b.author
+  FROM user_books ub
+  JOIN books b ON ub.book_id = b.id
+  WHERE ub.user_id = $1 
+    AND ub.status = 'reading'
+  ORDER BY ub.updated_at DESC
+  LIMIT 5
+  `,
       [id],
     );
 
     // 4. Friends preview
     const friendsResult = await pool.query(
       `
-      SELECT u.id, u.name,  
-      FROM friends f
-      JOIN users u ON u.id = f.friend_id
-      WHERE f.user_id = $1
-      LIMIT 5
-      `,
+  SELECT 
+    p.user_id,
+    p.first_name,
+    p.last_name,
+    p.profile_image, 
+    (
+      SELECT COUNT(*)
+      FROM friendships f2
+      WHERE f2.user_id = p.user_id
+    ) AS friends_count, 
+    (
+      SELECT COUNT(*)
+      FROM user_books ub
+      WHERE ub.user_id = p.user_id
+    ) AS books_count
+
+  FROM friendships f
+  JOIN profiles p ON p.user_id = f.friend_id
+  WHERE f.user_id = $1
+  LIMIT 5
+  `,
       [id],
     );
 
     const friendsCountResult = await pool.query(
       `
       SELECT COUNT(*) 
-      FROM friends
+      FROM friendships
       WHERE user_id = $1
       `,
       [id],
@@ -124,7 +148,7 @@ export async function getUserProfile(req: Request, res: Response) {
 
     res.json({
       user: {
-        ...userResult,
+        ...userResult[0],
       },
       stats: {
         friendsCount: Number(friendsCountResult.rows[0].count),
@@ -135,5 +159,8 @@ export async function getUserProfile(req: Request, res: Response) {
       shelves,
       friendsPreview: friendsResult.rows,
     });
-  } catch (err) {}
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 }

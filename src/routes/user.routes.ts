@@ -18,6 +18,6 @@ router.post(
 
 router.post("/profile", requireAuth, updateUserProfile);
 
-router.get("/:id/profile", requireAuth, getUserProfile);
+router.get("/profile/:id", requireAuth, getUserProfile);
 
 export default router;
