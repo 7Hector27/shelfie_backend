@@ -55,39 +55,22 @@ export async function getUserProfile(req: Request, res: Response) {
     );
 
     // 2. Shelf counts
-    const shelvesResult = await pool.query(
+    const countsResult = await pool.query(
       `
-      SELECT status, COUNT(*) as count
-      FROM user_books
-      WHERE user_id = $1
-      GROUP BY status
-      `,
-      [id],
-    );
-    const favoritesResult = await pool.query(
-      `
-      SELECT COUNT(*) 
-      FROM user_books
-      WHERE user_id = $1 AND favorite = true
-      `,
+  SELECT
+    COUNT(*)::int AS total,
+    COUNT(*) FILTER (WHERE status = 'want_to_read')::int AS want_to_read,
+    COUNT(*) FILTER (WHERE status = 'reading')::int AS reading,
+    COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+    COUNT(*) FILTER (WHERE status = 'dropped')::int AS dropped,
+    COUNT(*) FILTER (WHERE favorite = true)::int AS favorites
+  FROM user_books
+  WHERE user_id = $1
+  `,
       [id],
     );
 
-    const shelves = {
-      wantToRead: 0,
-      currentlyReading: 0,
-      read: 0,
-      dropped: 0,
-      favorites: Number(favoritesResult.rows[0].count),
-    };
-
-    shelvesResult.rows.forEach((row) => {
-      if (row.status === "want_to_read") shelves.wantToRead = Number(row.count);
-      if (row.status === "reading")
-        shelves.currentlyReading = Number(row.count);
-      if (row.status === "read") shelves.read = Number(row.count);
-      if (row.status === "dropped") shelves.dropped = Number(row.count);
-    });
+    const counts = countsResult.rows[0];
 
     // 3. Currently reading preview
     const currentlyReadingResult = await pool.query(
@@ -137,26 +120,19 @@ export async function getUserProfile(req: Request, res: Response) {
       [id],
     );
 
-    const friendsCountResult = await pool.query(
-      `
-      SELECT COUNT(*) 
-      FROM friendships
-      WHERE user_id = $1
-      `,
-      [id],
-    );
-
     res.json({
       user: {
         ...userResult[0],
       },
-      stats: {
-        friendsCount: Number(friendsCountResult.rows[0].count),
-        currentlyReadingCount: shelves.currentlyReading,
-        readCount: shelves.read,
-      },
       currentlyReading: currentlyReadingResult.rows,
-      shelves,
+      shelves: {
+        total: counts.total,
+        wantToRead: counts.want_to_read,
+        currentlyReading: counts.reading,
+        read: counts.completed,
+        dropped: counts.dropped,
+        favorites: counts.favorites,
+      },
       friendsPreview: friendsResult.rows,
     });
   } catch (err) {
