@@ -140,3 +140,81 @@ export async function removeUserBook(req: Request, res: Response) {
     return res.status(500).json({ error: "Failed to remove book" });
   }
 }
+
+export async function updateUserBook(req: Request, res: Response) {
+  const userId = req.user?.id;
+  const { bookId } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { status, rating, review, date_started, date_finished, favorite } =
+    req.body;
+
+  try {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let index = 1;
+
+    // Only update fields that were sent (including null)
+    if ("status" in req.body) {
+      fields.push(`status = $${index++}`);
+      values.push(status);
+    }
+
+    if ("rating" in req.body) {
+      fields.push(`rating = $${index++}`);
+      values.push(rating);
+    }
+
+    if ("review" in req.body) {
+      fields.push(`review = $${index++}`);
+      values.push(review);
+    }
+
+    if ("date_started" in req.body) {
+      fields.push(`date_started = $${index++}`);
+      values.push(date_started);
+    }
+
+    if ("date_finished" in req.body) {
+      fields.push(`date_finished = $${index++}`);
+      values.push(date_finished);
+    }
+
+    if ("favorite" in req.body) {
+      fields.push(`favorite = $${index++}`);
+      values.push(favorite);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    // Always update updated_at
+    fields.push(`updated_at = NOW()`);
+
+    values.push(userId);
+    values.push(bookId);
+
+    const { rows } = await pool.query(
+      `
+      UPDATE user_books
+      SET ${fields.join(", ")}
+      WHERE user_id = $${index++}
+      AND id = $${index}
+      RETURNING *;
+      `,
+      values,
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "User book not found " });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update user book" });
+  }
+}

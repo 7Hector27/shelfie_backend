@@ -39,7 +39,7 @@ export async function updateUserProfile(req: Request, res: Response) {
 
 export async function getUserProfile(req: Request, res: Response) {
   const { id } = req.params;
-  console.log(id);
+
   if (!req.user) {
     return res.status(400).json({ error: "Unauthorized" });
   }
@@ -203,7 +203,8 @@ export async function getUserBooks(req: Request, res: Response) {
     // 2) paged data
     const dataQuery = `
   SELECT 
-    ub.*,
+    ub.*,  
+    ub.rating::float AS rating,
     b.title,
     b.author,
     b.cover_url,
@@ -215,6 +216,22 @@ export async function getUserBooks(req: Request, res: Response) {
   LIMIT $${paramIndex}
   OFFSET $${paramIndex + 1}
 `;
+    const countsResult = await pool.query(
+      `
+  SELECT
+    COUNT(*)::int AS total,
+    COUNT(*) FILTER (WHERE status = 'want_to_read')::int AS want_to_read,
+    COUNT(*) FILTER (WHERE status = 'reading')::int AS reading,
+    COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+    COUNT(*) FILTER (WHERE status = 'dropped')::int AS dropped,
+    COUNT(*) FILTER (WHERE favorite = true)::int AS favorites
+  FROM user_books
+  WHERE user_id = $1
+  `,
+      [userId],
+    );
+
+    const counts = countsResult.rows[0];
 
     const dataValues = [...values, limitNumber, offset];
     const { rows } = await pool.query(dataQuery, dataValues);
@@ -230,6 +247,14 @@ export async function getUserBooks(req: Request, res: Response) {
         totalPages,
         hasNextPage: pageNumber < totalPages,
         hasPrevPage: pageNumber > 1,
+      },
+      counts: {
+        total: counts.total,
+        wantToRead: counts.want_to_read,
+        currentlyReading: counts.reading,
+        read: counts.completed,
+        dropped: counts.dropped,
+        favorites: counts.favorites,
       },
     });
   } catch (error) {
