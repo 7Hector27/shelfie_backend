@@ -183,6 +183,7 @@ export async function getUserBooks(req: Request, res: Response) {
     ub.rating::float AS rating,
     b.title,
     b.author,
+    b.author_id,
     b.cover_url,
     b.description
   FROM user_books ub
