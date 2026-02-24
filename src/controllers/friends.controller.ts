@@ -18,7 +18,7 @@ export async function searchFriends(req: Request, res: Response) {
   }
 
   const users = await searchUsersForFriends(query, userId);
-
+  console.log(users, "users");
   res.json({
     users: users.map((u) => ({
       id: u.id,
@@ -26,6 +26,7 @@ export async function searchFriends(req: Request, res: Response) {
       lastName: u.last_name,
       email: u.email,
       profilePictureUrl: u.profile_picture_url,
+      currently_reading: u.currently_reading,
     })),
   });
 }
@@ -41,7 +42,10 @@ export async function getFriendsList(req: Request, res: Response) {
       firstName: f.first_name,
       lastName: f.last_name,
       email: f.email,
-      profilePictureUrl: f.profile_picture_url,
+      profilePictureUrl: f.profile_image,
+      currently_reading: f.currently_reading,
+      book_count: f.book_count,
+      friend_count: f.friend_count,
     })),
   });
 }

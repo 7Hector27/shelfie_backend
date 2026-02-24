@@ -214,7 +214,13 @@ export async function getUserBooks(req: Request, res: Response) {
     const { rows } = await pool.query(dataQuery, dataValues);
 
     const totalPages = Math.max(1, Math.ceil(total / limitNumber));
+    // Fetch profile
+    const profileResult = await pool.query(
+      `SELECT * FROM profiles WHERE user_id = $1`,
+      [userId],
+    );
 
+    const profile = profileResult.rows[0] || null;
     res.json({
       data: rows,
       pagination: {
@@ -233,6 +239,7 @@ export async function getUserBooks(req: Request, res: Response) {
         dropped: counts.dropped,
         favorites: counts.favorites,
       },
+      profile: profile,
     });
   } catch (error) {
     console.error(error);

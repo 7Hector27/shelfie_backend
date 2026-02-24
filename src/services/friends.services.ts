@@ -158,14 +158,66 @@ export async function getFriendsListForUser(userId: string) {
       u.email,
       p.first_name,
       p.last_name,
-      p.profile_image
+      p.profile_image,
+
+      -- book count
+      COALESCE(book_stats.book_count, 0) AS book_count,
+
+      -- friend count
+      COALESCE(friend_stats.friend_count, 0) AS friend_count,
+
+      -- currently reading
+      COALESCE(cr.currently_reading, '[]'::json) AS currently_reading
+
     FROM friendships f
     JOIN users u ON u.id = f.friend_id
     JOIN profiles p ON p.user_id = u.id
+
+    -- 📚 Book Count
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::int AS book_count
+      FROM user_books ub
+      WHERE ub.user_id = u.id
+    ) book_stats ON TRUE
+
+    -- 👥 Friend Count
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::int AS friend_count
+      FROM friendships f2
+      WHERE f2.user_id = u.id
+    ) friend_stats ON TRUE
+
+    -- 📖 Currently Reading
+    LEFT JOIN LATERAL (
+      SELECT json_agg(
+        json_build_object(
+          'user_book_id', ub.id,
+          'status', ub.status,
+          'rating', ub.rating::float,
+          'favorite', ub.favorite,
+          'updated_at', ub.updated_at,
+          'book', json_build_object(
+            'id', b.id,
+            'title', b.title,
+            'author', b.author,
+            'author_id', b.author_id,
+            'cover_url', b.cover_url,
+            'description', b.description
+          )
+        )
+        ORDER BY ub.updated_at DESC
+      ) AS currently_reading
+      FROM user_books ub
+      JOIN books b ON ub.book_id = b.id
+      WHERE ub.user_id = u.id
+        AND ub.status = 'reading'
+    ) cr ON TRUE
+
     WHERE f.user_id = $1
     ORDER BY p.first_name, p.last_name
     `,
     [userId],
   );
+
   return rows;
 }
