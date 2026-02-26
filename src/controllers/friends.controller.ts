@@ -18,7 +18,6 @@ export async function searchFriends(req: Request, res: Response) {
   }
 
   const users = await searchUsersForFriends(query, userId);
-  console.log(users, "users");
   res.json({
     users: users.map((u) => ({
       id: u.id,
