@@ -9,6 +9,7 @@ import friendsRoutes from "./routes/friends.routes";
 import userBookRoutes from "./routes/userBooks.routes";
 import messagesRoutes from "./routes/messages.routes";
 import openLibraryRoutes from "./routes/openLibrary.routes";
+import feedRoutes from "./routes/feed.routes";
 
 import { errorHandler } from "./middlewares/error.middleware";
 
@@ -44,6 +45,7 @@ app.use("/openlibrary", openLibraryRoutes);
 app.use("/userbooks", userBookRoutes);
 app.use("/messages", messagesRoutes);
 
+app.use("/api/feed", feedRoutes);
 /* ============================= */
 /* HEALTH CHECK */
 /* ============================= */
