@@ -236,9 +236,7 @@ export async function updateUserBook(req: Request, res: Response) {
     }
 
     const prev = prevRes.rows[0];
-    console.log("Prev status:", prev.status);
-    console.log("Incoming status:", status);
-    console.log("Status in body:", "status" in req.body);
+
     const fields: string[] = [];
     const values: any[] = [];
     let index = 1;

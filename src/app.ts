@@ -44,8 +44,7 @@ app.use("/friends", friendsRoutes);
 app.use("/openlibrary", openLibraryRoutes);
 app.use("/userbooks", userBookRoutes);
 app.use("/messages", messagesRoutes);
-
-app.use("/api/feed", feedRoutes);
+app.use("/feed", feedRoutes);
 /* ============================= */
 /* HEALTH CHECK */
 /* ============================= */
