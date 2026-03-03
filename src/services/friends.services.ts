@@ -8,9 +8,10 @@ export async function searchUsersForFriends(
 
   const first = parts[0] ?? null;
   const second = parts[1] ?? null;
+
   const { rows } = await pool.query(
     `
- SELECT
+SELECT
   u.id,
   u.email,
   p.first_name,
@@ -42,15 +43,20 @@ WHERE
       AND p.last_name ILIKE $1 || '%'
     )
   )
+
 AND u.id <> $2
 
+-- exclude existing friendships (both directions)
 AND NOT EXISTS (
   SELECT 1
   FROM friendships f
-  WHERE f.user_id = $2
-    AND f.friend_id = u.id
+  WHERE
+    (f.user_id = $2 AND f.friend_id = u.id)
+    OR
+    (f.user_id = u.id AND f.friend_id = $2)
 )
 
+-- exclude pending friend requests
 AND NOT EXISTS (
   SELECT 1
   FROM friend_requests fr
@@ -61,10 +67,10 @@ AND NOT EXISTS (
 )
 
 LIMIT 10;
-
-  `,
+`,
     [first, currentUserId, second],
   );
+
   return rows;
 }
 
@@ -220,4 +226,42 @@ export async function getFriendsListForUser(userId: string) {
   );
 
   return rows;
+}
+
+export async function deleteFriend(userId: string, friendId: string) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // remove friendship
+    await client.query(
+      `
+      DELETE FROM friendships
+      WHERE 
+        (user_id = $1 AND friend_id = $2)
+        OR
+        (user_id = $2 AND friend_id = $1)
+      `,
+      [userId, friendId],
+    );
+
+    await client.query(
+      `
+      DELETE FROM friend_requests
+      WHERE
+        (sender_id = $1 AND receiver_id = $2)
+        OR
+        (sender_id = $2 AND receiver_id = $1)
+      `,
+      [userId, friendId],
+    );
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }

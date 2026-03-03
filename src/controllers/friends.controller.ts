@@ -6,6 +6,7 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
   getFriendsListForUser,
+  deleteFriend as deleteFriendService,
 } from "../services/friends.services";
 
 export async function searchFriends(req: Request, res: Response) {
@@ -85,4 +86,23 @@ export async function declineRequest(req: Request, res: Response) {
 
   await declineFriendRequest(requestId, req.user!.id);
   res.sendStatus(204);
+}
+
+export async function deleteFriend(req: Request, res: Response) {
+  if (!req.user) return res.sendStatus(401);
+
+  const userId = req.user.id;
+  const friendId = req.params.friendId;
+
+  if (!friendId || Array.isArray(friendId)) {
+    return res.status(400).json({ error: "Invalid friendId" });
+  }
+
+  try {
+    await deleteFriendService(userId, friendId);
+    res.sendStatus(204);
+  } catch (err) {
+    console.error("Delete friend failed:", err);
+    res.status(500).json({ error: "Failed to delete friend" });
+  }
 }
