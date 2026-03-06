@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import * as messagesService from "../services/messages.service";
+import {
+  markConversationAsRead,
+  deleteConversationForUser,
+} from "../services/messages.service";
 
 export const getUserConversations = async (req: Request, res: Response) => {
   try {
@@ -66,9 +70,7 @@ export const getConversationById = async (req: Request, res: Response) => {
 
 export const sendMessage = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const { conversationId } = req.params;
     const { body } = req.body;
@@ -81,20 +83,23 @@ export const sendMessage = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Message body required" });
     }
 
-    const message = await messagesService.sendMessage(
+    await messagesService.sendMessage(
       conversationId,
       req.user.id,
       body.trim(),
+      res,
     );
 
-    return res.status(201).json(message);
+    if (!res.headersSent) {
+      return res.status(201).json({ success: true });
+    }
   } catch (error) {
     console.error("sendMessage error:", error);
-    return res.status(500).json({ message: "Failed to send message" });
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Failed to send message" });
+    }
   }
 };
-
-import { markConversationAsRead } from "../services/messages.service";
 
 export const markConversationReadController = async (
   req: any,
@@ -114,3 +119,55 @@ export const markConversationReadController = async (
     next(error);
   }
 };
+
+export const startAiConversation = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const { title, author, description } = req.body;
+
+    if (!title || !author) {
+      return res.status(400).json({ message: "title and author required" });
+    }
+
+    const conversation = await messagesService.startAiConversation(
+      req.user.id,
+      {
+        title,
+        author,
+        description,
+      },
+    );
+
+    return res.status(200).json(conversation);
+  } catch (error) {
+    console.error("startAiConversation error:", error);
+    return res.status(500).json({ message: "Failed to start AI conversation" });
+  }
+};
+
+export async function deleteConversation(req: Request, res: Response) {
+  const userId = req.user?.id;
+  const { conversationId } = req.params;
+
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!conversationId || Array.isArray(conversationId)) {
+    return res.status(400).json({ error: "Invalid conversation id" });
+  }
+
+  try {
+    const deleted = await deleteConversationForUser(conversationId, userId);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delete conversation error:", err);
+    res.status(500).json({ error: "Failed to delete conversation" });
+  }
+}
