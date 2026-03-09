@@ -17,25 +17,25 @@ const app = express();
 const router = Router();
 
 /* ============================= */
-/* CORS CONFIG */
+/* CORS CONFIG                   */
 /* ============================= */
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:3000", // ✅
     credentials: true,
   }),
 );
 
 /* ============================= */
-/* MIDDLEWARE */
+/* MIDDLEWARE                    */
 /* ============================= */
 
 app.use(cookieParser());
 app.use(express.json());
 
 /* ============================= */
-/* ROUTES */
+/* ROUTES                        */
 /* ============================= */
 
 app.use("/auth", authRoutes);
@@ -45,8 +45,9 @@ app.use("/openlibrary", openLibraryRoutes);
 app.use("/userbooks", userBookRoutes);
 app.use("/messages", messagesRoutes);
 app.use("/feed", feedRoutes);
+
 /* ============================= */
-/* HEALTH CHECK */
+/* HEALTH CHECK                  */
 /* ============================= */
 
 router.get("/health", (_req, res) => {
@@ -56,7 +57,7 @@ router.get("/health", (_req, res) => {
 app.use(router);
 
 /* ============================= */
-/* ERROR HANDLER (LAST) */
+/* ERROR HANDLER (LAST)          */
 /* ============================= */
 
 app.use(errorHandler);
