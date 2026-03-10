@@ -6,6 +6,13 @@ import * as userRepo from "../repositories/user.repository";
 
 const COOKIE_NAME = "shelfie_session";
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none" as const,
+  maxAge: 1000 * 60 * 60 * 24 * 7,
+};
+
 export const register = async (
   req: Request,
   res: Response,
@@ -13,15 +20,9 @@ export const register = async (
 ) => {
   try {
     const result = await authService.register(req.body);
-    // 🔐 create session
     const token = signJwt({ userId: result.id });
 
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    });
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     res.status(201).json(result);
   } catch (err) {
@@ -39,12 +40,7 @@ export const signIn = async (
 
     const token = signJwt({ userId: user.id });
 
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     res.json(user);
   } catch (error: any) {
@@ -79,8 +75,8 @@ export const me = async (req: Request, res: Response) => {
 export const logout = (_req: Request, res: Response) => {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
   });
 
   return res.sendStatus(204);
