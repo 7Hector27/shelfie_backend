@@ -1,11 +1,11 @@
 import { Pool } from "pg";
 
 export const pool = new Pool({
-  host: "127.0.0.1",
-  port: 5432,
-  user: "shelfie_user",
-  password: "Anaheim@27",
-  database: "shelfie_db",
+  connectionString: process.env.DATABASE_URL,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
 });
 
 export async function connectDB() {
